@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: OS Service
+  version: 1.0.0
+  description: Serviço de ordens de serviço e coordenação da Saga.
+servers:
+  - url: http://localhost:8081
+paths:
+  /health:
+    get:
+      summary: Healthcheck
+      responses: {"200": {description: OK}}
+  /service-orders:
+    post:
+      summary: Cria uma ordem de serviço e inicia a Saga
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client_id, vehicle_id, amount_cents]
+              properties:
+                client_id: {type: string, format: uuid}
+                vehicle_id: {type: string, format: uuid}
+                amount_cents: {type: integer, format: int64, example: 15000}
+      responses: {"201": {description: OS criada}, "400": {description: Entrada inválida}}
+  /service-orders/{id}:
+    get:
+      summary: Consulta uma OS
+      parameters: [{name: id, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {"200": {description: OS encontrada}, "404": {description: Não encontrada}}
+  /service-orders/{id}/cancel:
+    post:
+      summary: Executa a compensação de cancelamento da OS
+      parameters: [{name: id, in: path, required: true, schema: {type: string, format: uuid}}]
+      responses: {"200": {description: OS cancelada}, "409": {description: Estado não compensável}}
