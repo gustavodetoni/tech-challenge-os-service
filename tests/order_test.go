@@ -31,7 +31,7 @@ func TestSagaCompensations(t *testing.T) {
 }
 
 func TestStatusAfterEvent(t *testing.T) {
-	cases := map[string]string{"PaymentConfirmed": "IN_PROGRESS", "ServiceOrderExecutionCompleted": "FINISHED", "ServiceOrderCanceled": "CANCELED", "Other": "UNCHANGED"}
+	cases := map[string]string{"PaymentConfirmed": "IN_PROGRESS", "ServiceOrderExecutionCompleted": "FINISHED", "ServiceOrderCanceled": "CANCELED", "ExecutionFailed": "CANCELED", "Other": "UNCHANGED"}
 	for event, want := range cases {
 		if got := application.StatusAfterEvent(event); got != want {
 			t.Errorf("%s: got %s want %s", event, got, want)

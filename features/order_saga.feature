@@ -9,6 +9,6 @@ Feature: Service order distributed saga
 
   Scenario: Execution failure is compensated
     Given a paid service order exists
-    When Execution Service cannot start the repair
-    Then the saga records the failure
-    And the service order can be canceled through its compensation command
+    When Execution Service reports ExecutionFailed
+    Then OS Service marks the order as CANCELED
+    And Billing Service receives PaymentRefundRequested
