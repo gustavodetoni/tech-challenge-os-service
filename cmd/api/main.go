@@ -150,8 +150,10 @@ func (a *App) consumeEvents() {
 		return
 	}
 	defer ch.Close()
+	_, _ = ch.QueueDeclare("os-service-saga", true, false, false, false, nil)
 	_ = ch.QueueBind("os-service-saga", "billing.PaymentConfirmed", "tech-challenge.events", false, nil)
 	_ = ch.QueueBind("os-service-saga", "execution.ServiceOrderExecutionCompleted", "tech-challenge.events", false, nil)
+	_ = ch.QueueBind("os-service-saga", "execution.ExecutionFailed", "tech-challenge.events", false, nil)
 	msgs, err := ch.Consume("os-service-saga", "os-service", false, false, false, false, nil)
 	if err != nil {
 		return
@@ -162,6 +164,10 @@ func (a *App) consumeEvents() {
 			status := "IN_PROGRESS"
 			if e.Type == "ServiceOrderExecutionCompleted" {
 				status = "FINISHED"
+			}
+			if e.Type == "ExecutionFailed" {
+				status = "CANCELED"
+				a.publish(Event{ID: uuid.NewString(), Type: "PaymentRefundRequested", SagaID: e.SagaID, OrderID: e.OrderID, OccurredAt: time.Now().UTC(), Data: e.Data})
 			}
 			_, _ = a.db.Exec(`UPDATE service_orders SET status=$1 WHERE id=$2`, status, e.OrderID)
 		}
