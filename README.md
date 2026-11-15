@@ -62,6 +62,16 @@ ExecutionFailed
 → orçamento marcado como REFUNDED
 ```
 
+As falhas das etapas anteriores também são tratadas:
+
+| Falha | Evento | Compensação |
+|---|---|---|
+| Criação do orçamento | `QuoteCreationFailed` | OS marcada como `CANCELED` |
+| Pagamento recusado ou indisponível | `PaymentFailed` | OS marcada como `CANCELED` |
+| Execução do reparo | `ExecutionFailed` | OS cancelada e `PaymentRefundRequested` |
+
+Falhas locais de persistência usam rollback da transação PostgreSQL. Falhas distribuídas usam eventos de compensação, mantendo cada serviço responsável pelo próprio banco.
+
 O fluxo documentado em [features/order_saga.feature](features/order_saga.feature) é executado por Godog em [tests/order_saga_bdd_test.go](tests/order_saga_bdd_test.go), cobrindo pagamento confirmado e falha de execução com solicitação de estorno.
 
 ## Execução local
@@ -94,3 +104,22 @@ internal/application: 100%
 ```
 
 O CI exige cobertura mínima de 80% do pacote de regras de negócio usando `-coverpkg=./internal/application`.
+
+## Aderência à Fase 4
+
+| Requisito | Implementação |
+|---|---|
+| Microsserviço independente | Módulo Go, Dockerfile, CI, Sonar e deploy próprios. |
+| Banco próprio | PostgreSQL do OS Service, configurado por `DATABASE_URL`. |
+| API REST | Criação, consulta e compensação da OS. |
+| Mensageria | RabbitMQ, exchange `tech-challenge.events`. |
+| Saga | OS Service atua como orquestrador central. |
+| Compensação | `QuoteCreationFailed`, `PaymentFailed` e `ExecutionFailed`. |
+| Qualidade | Testes unitários, BDD Godog, cobertura e SonarQube. |
+| Kubernetes | Deployment e Service estão centralizados no [tech-challenge-infra-k8s](../tech-challenge-infra-k8s/k8s/base/microservices.yaml). |
+
+## Manifestos Kubernetes
+
+Os manifestos não ficam duplicados neste repositório. A decisão arquitetural foi centralizar a infraestrutura compartilhada no `tech-challenge-infra-k8s`, que compõe os Deployments dos três microsserviços, RabbitMQ, MongoDB, Secrets, probes e Services.
+
+O workflow deste repositório publica a imagem e atualiza o Deployment `tech-challenge-os-service` no cluster. A infraestrutura base e os manifestos são aplicados pelo workflow do repositório de infraestrutura.

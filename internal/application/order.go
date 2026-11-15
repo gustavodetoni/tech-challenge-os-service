@@ -44,6 +44,8 @@ func StatusAfterEvent(eventType string) string {
 		return "CANCELED"
 	case "ExecutionFailed":
 		return "CANCELED"
+	case "PaymentFailed", "QuoteCreationFailed":
+		return "CANCELED"
 	default:
 		return "UNCHANGED"
 	}
